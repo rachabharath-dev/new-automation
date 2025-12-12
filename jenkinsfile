@@ -1,46 +1,11 @@
-pipeline {
-  agent any
-  environment {
-    DOCKER_IMAGE = "yourdockerid/my-app:${env.BUILD_NUMBER}"
-    REGISTRY_CREDENTIALS = 'docker-hub-cred' // configure in Jenkins
-    SSH_CREDENTIALS = 'prod-ssh' // only if deploying to EC2 via SSH
-  }
-  stages {
-    stage('Checkout') { steps { checkout scm } }
-    stage('Build & Test') {
-      steps {
-        sh 'mvn -B -DskipTests=false clean package'
-      }
-      post { always { junit 'target/surefire-reports/*.xml' } }
-    }
-    stage('Build Docker') {
-      steps {
-        sh "docker build -t ${DOCKER_IMAGE} ."
-      }
-    }
-    stage('Push Image') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          sh 'echo $PASS | docker login -u $USER --password-stdin'
-          sh "docker push ${DOCKER_IMAGE}"
-        }
-      }
-    }
-    stage('Deploy') {
-      steps {
-        script {
-          // Option A: deploy to EC2 (via SSH)
-          // Option B: deploy to Kubernetes (kubectl)
-          // Example: deploy to EC2 using SSH and docker-compose (see deploy script)
-          sshagent (credentials: [SSH_CREDENTIALS]) {
-            sh "ssh -o StrictHostKeyChecking=no ubuntu@PROD_HOST 'bash -s' < deploy/deploy_ec2.sh ${DOCKER_IMAGE}"
+pipeline{
+   agent any{
+      stages{
+          stage('build'){
+            steps{
+
+              sh'echo "hello"'
           }
-        }
       }
-    }
-  }
-  post {
-    success { echo "Build succeeded: ${env.BUILD_NUMBER}" }
-    failure { mail to: 'you@domain', subject: "Failed: ${env.JOB_NAME}", body: "See Jenkins" }
-  }
+   }
 }
